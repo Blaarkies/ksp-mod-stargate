@@ -1,0 +1,88 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+    <PropertyGroup>
+        <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+        <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+        <ProjectGuid>{2204D332-2EF0-4517-B076-4D9794700662}</ProjectGuid>
+        <OutputType>Library</OutputType>
+        <AppDesignerFolder>Properties</AppDesignerFolder>
+        <RootNamespace>Stargate</RootNamespace>
+        <AssemblyName>Stargate</AssemblyName>
+        <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+        <FileAlignment>512</FileAlignment>
+        <LangVersion>latest</LangVersion>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+        <PlatformTarget>AnyCPU</PlatformTarget>
+        <DebugSymbols>true</DebugSymbols>
+        <DebugType>full</DebugType>
+        <Optimize>false</Optimize>
+        <OutputPath>bin\Debug\</OutputPath>
+        <DefineConstants>DEBUG;TRACE</DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>4</WarningLevel>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+        <PlatformTarget>AnyCPU</PlatformTarget>
+        <DebugType>pdbonly</DebugType>
+        <Optimize>true</Optimize>
+        <OutputPath>bin\Release\</OutputPath>
+        <DefineConstants>TRACE</DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>4</WarningLevel>
+    </PropertyGroup>
+    <ItemGroup>
+        <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+            <HintPath>..\Kerbal Space Program\KSP_x64_Data\Managed\Assembly-CSharp.dll</HintPath>
+        </Reference>
+        <Reference Include="Assembly-CSharp-firstpass, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+            <HintPath>..\Kerbal Space Program\KSP_x64_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+        </Reference>
+        <Reference Include="System" />
+        <Reference Include="System.Core" />
+        <Reference Include="System.Data" />
+        <Reference Include="System.Xml" />
+        <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+            <HintPath>..\Kerbal Space Program\KSP_x64_Data\Managed\UnityEngine.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.AudioModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+            <HintPath>..\Kerbal Space Program\KSP_x64_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+            <HintPath>..\Kerbal Space Program\KSP_x64_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+    <ItemGroup>
+        <Compile Include="Properties\AssemblyInfo.cs" />
+        <Compile Include="Src\BlaarkiesLog.cs" />
+        <Compile Include="Src\ExtensionMethods.cs" />
+        <Compile Include="Src\Domain\ResourceConsumerConfig.cs" />
+        <Compile Include="Src\ModulePortal.cs" />
+        <Compile Include="Src\ResourceConsumer.cs" />
+        <Compile Include="Src\StargateDialer.cs" />
+        <Compile Include="Src\StargateSelector.cs" />
+        <Compile Include="Src\Wormhole.cs" />
+    </ItemGroup>
+    <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
+    <Target Name="CopyBuildFiles" AfterTargets="Build">
+        <PropertyGroup>
+            <EntryPath>Blaarkies\Stargate</EntryPath>
+            <KspPath>..\Kerbal Space Program\GameData\$(EntryPath)</KspPath>
+        </PropertyGroup>
+
+        <ItemGroup>
+            <ModCoreFiles Include="$(TargetDir)Stargate.dll; dist\$(EntryPath)\*.*" />
+            <StargateMilkywayFiles Include="dist\$(EntryPath)\stargateMilkyway\*.*" />
+        </ItemGroup>
+
+        <Copy SourceFiles="$(TargetDir)Stargate.dll" DestinationFolder="dist\$(EntryPath)" ContinueOnError="true" />
+
+        <Copy SourceFiles="@(ModCoreFiles)" DestinationFolder="$(KspPath)" ContinueOnError="true" />
+        <Copy SourceFiles="@(StargateMilkywayFiles)" DestinationFolder="$(KspPath)\stargateMilkyway" ContinueOnError="true" />
+
+        <Exec Command="KspShortcut.lnk" Condition=" '$(OS)' != 'Unix' " />
+    </Target>
+
+</Project>
