@@ -1,5 +1,6 @@
 ﻿using System;
 using Stargate.Interface;
+using Stargate.Utilities;
 
 namespace Stargate
 {
@@ -15,6 +16,7 @@ namespace Stargate
 
         private StargateSelector _stargateSelector;
         private ResourceConsumer _nqConsumer;
+        private ResourceConsumer _ecConsumerDialing;
         private StargateDialer _stargateDialer;
 
         public override void OnStart(StartState state)
@@ -36,6 +38,17 @@ namespace Stargate
                     minimumReserveToActivate = 1,
                     onRanOutOfResource =
                         () => BlaarkiesLog.OnScreen($"Ran out of Naquadah"),
+                });
+
+            _ecConsumerDialing = new ResourceConsumer(
+                "ElectricCharge",
+                part,
+                new ResourceConsumerConfig
+                {
+                    costPerSecondActive = 4,
+                    minimumReserveToActivate = 80,
+                    onRanOutOfResource =
+                        () => BlaarkiesLog.OnScreen($"Ran out of Electric Charge"),
                 });
 
             _stargateDialer = new StargateDialer(part);
@@ -112,7 +125,6 @@ namespace Stargate
             var wormhole = new Wormhole(vessel, _stargateSelector);
             if (!wormhole.Valid)
             {
-                BlaarkiesLog.OnScreen($"No target gate set");
                 return;
             }
 
@@ -123,12 +135,22 @@ namespace Stargate
                 return;
             }
 
-            _nqConsumer.ConsumeContinuous();
+            _ecConsumerDialing.ConsumeContinuous();
+
+            _stargateDialer.StartDialingSequence(
+                () =>
+                {
+                    BlaarkiesLog.OnScreen($"Dialing complete");
+
+                    _nqConsumer.ConsumeContinuous();
+                });
         }
 
         private void FixedUpdate()
         {
-            _nqConsumer.update();
+            _stargateDialer.Update();
+            _ecConsumerDialing.Update();
+            _nqConsumer.Update();
         }
 
     }

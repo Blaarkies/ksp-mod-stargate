@@ -1,7 +1,6 @@
-﻿using System;
-using Stargate.Interface;
+﻿using Stargate.Interface;
 
-namespace Stargate
+namespace Stargate.Utilities
 {
     /// <summary>
     /// Handles the consumption of a resource, detects when it has run out, or when there is not enough to start with.
@@ -15,7 +14,7 @@ namespace Stargate
         private readonly Part _part;
 
         private bool _isConsuming = false;
-        private long _tick = 0;
+        private readonly TickerWatch _watch = new TickerWatch();
 
         private double ResourceAvailable
         {
@@ -34,11 +33,11 @@ namespace Stargate
             Part part,
             ResourceConsumerConfig config)
         {
-            this._part = part;
+            _part = part;
             var definition = PartResourceLibrary.Instance
                 .GetDefinition(resourceName);
             _resourceId = definition.id;
-            this._config = config;
+            _config = config;
 
             _costPerTickActive = config.costPerSecondActive / 60;
         }
@@ -56,12 +55,11 @@ namespace Stargate
         public void ConsumeContinuous()
         {
             _isConsuming = true;
-            _tick = 0;
-            BlaarkiesLog.OnScreen($"Consuming...");
+            _watch.Start();
         }
 
 
-        public void update()
+        public void Update()
         {
             if (!_isConsuming)
             {
@@ -70,12 +68,13 @@ namespace Stargate
 
             var consumed = _part.RequestResource(_resourceId, _costPerTickActive);
 
-            _tick++;
+            _watch.Tick();
 
-            if (consumed == 0)
+            if (consumed < _costPerTickActive)
             {
                 _isConsuming = false;
                 _config.onRanOutOfResource?.Invoke();
+                _watch.Start();
             }
         }
     }

@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace Stargate
+namespace Stargate.Utilities
 {
     public static class Extensions
     {

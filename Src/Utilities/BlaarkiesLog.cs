@@ -1,4 +1,4 @@
-﻿namespace Stargate
+﻿namespace Stargate.Utilities
 {
     public class BlaarkiesLog
     {

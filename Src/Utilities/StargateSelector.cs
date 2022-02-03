@@ -1,7 +1,7 @@
 ﻿using System;
 using UniLinq;
 
-namespace Stargate
+namespace Stargate.Utilities
 {
     /// <summary>
     /// Handles the targeting and cycling through stargates

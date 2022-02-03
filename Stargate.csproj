@@ -55,14 +55,15 @@
     </ItemGroup>
     <ItemGroup>
         <Compile Include="Properties\AssemblyInfo.cs" />
-        <Compile Include="Src\BlaarkiesLog.cs" />
-        <Compile Include="Src\ExtensionMethods.cs" />
         <Compile Include="Src\Domain\ResourceConsumerConfig.cs" />
         <Compile Include="Src\ModulePortal.cs" />
-        <Compile Include="Src\ResourceConsumer.cs" />
-        <Compile Include="Src\StargateDialer.cs" />
-        <Compile Include="Src\StargateSelector.cs" />
-        <Compile Include="Src\Wormhole.cs" />
+        <Compile Include="Src\Utilities\BlaarkiesLog.cs" />
+        <Compile Include="Src\Utilities\ExtensionMethods.cs" />
+        <Compile Include="Src\Utilities\ResourceConsumer.cs" />
+        <Compile Include="Src\Utilities\StargateDialer.cs" />
+        <Compile Include="Src\Utilities\StargateSelector.cs" />
+        <Compile Include="Src\Utilities\TickerWatch.cs" />
+        <Compile Include="Src\Utilities\Wormhole.cs" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 

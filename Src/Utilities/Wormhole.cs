@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace Stargate
+namespace Stargate.Utilities
 {
     /// <summary>
     /// Handles the connection and teleportation between 2 stargates.
