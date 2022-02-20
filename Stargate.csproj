@@ -46,6 +46,9 @@
         <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
             <HintPath>..\Kerbal Space Program\KSP_x64_Data\Managed\UnityEngine.dll</HintPath>
         </Reference>
+        <Reference Include="UnityEngine.AnimationModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>..\Kerbal Space Program\KSP_x64_Data\Managed\UnityEngine.AnimationModule.dll</HintPath>
+        </Reference>
         <Reference Include="UnityEngine.AudioModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
             <HintPath>..\Kerbal Space Program\KSP_x64_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
         </Reference>
@@ -55,14 +58,22 @@
     </ItemGroup>
     <ItemGroup>
         <Compile Include="Properties\AssemblyInfo.cs" />
+        <Compile Include="Src\Domain\ActionSchedule.cs" />
+        <Compile Include="Src\Domain\Animations.cs" />
         <Compile Include="Src\Domain\ResourceConsumerConfig.cs" />
+        <Compile Include="Src\Domain\Sounds.cs" />
         <Compile Include="Src\ModulePortal.cs" />
+        <Compile Include="Src\Utilities\AnimationContainer.cs" />
+        <Compile Include="Src\Utilities\BlaarkiesAnimator.cs" />
         <Compile Include="Src\Utilities\BlaarkiesLog.cs" />
+        <Compile Include="Src\Utilities\Cycler.cs" />
         <Compile Include="Src\Utilities\ExtensionMethods.cs" />
         <Compile Include="Src\Utilities\ResourceConsumer.cs" />
+        <Compile Include="Src\Utilities\SoundEffect.cs" />
         <Compile Include="Src\Utilities\StargateDialer.cs" />
         <Compile Include="Src\Utilities\StargateSelector.cs" />
         <Compile Include="Src\Utilities\TickerWatch.cs" />
+        <Compile Include="Src\Utilities\Waiter.cs" />
         <Compile Include="Src\Utilities\Wormhole.cs" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
@@ -76,12 +87,14 @@
         <ItemGroup>
             <ModCoreFiles Include="$(TargetDir)Stargate.dll; dist\$(EntryPath)\*.*" />
             <StargateMilkywayFiles Include="dist\$(EntryPath)\stargateMilkyway\*.*" />
+            <SoundFiles Include="dist\$(EntryPath)\sound\*.*" />
         </ItemGroup>
 
         <Copy SourceFiles="$(TargetDir)Stargate.dll" DestinationFolder="dist\$(EntryPath)" ContinueOnError="true" />
 
         <Copy SourceFiles="@(ModCoreFiles)" DestinationFolder="$(KspPath)" ContinueOnError="true" />
         <Copy SourceFiles="@(StargateMilkywayFiles)" DestinationFolder="$(KspPath)\stargateMilkyway" ContinueOnError="true" />
+        <Copy SourceFiles="@(SoundFiles)" DestinationFolder="$(KspPath)\sound" ContinueOnError="true" />
 
         <Exec Command="KspShortcut.lnk" Condition=" '$(OS)' != 'Unix' " />
     </Target>

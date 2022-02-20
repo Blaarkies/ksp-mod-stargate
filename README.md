@@ -96,6 +96,7 @@ This project requires external references found in the KSP folder
 - ..\Kerbal Space Program\KSP_x64_Data\Managed\Assembly-CSharp-firstpass.dll
 - ..\Kerbal Space Program\KSP_x64_Data\Managed\UnityEngine.dll
 - ..\Kerbal Space Program\KSP_x64_Data\Managed\UnityEngine.CoreModule.dll
+- ..\Kerbal Space Program\KSP_x64_Data\Managed\UnityEngine.AnimationModule.dll
 
 [comment]: <> (- ..\Kerbal Space Program\KSP_x64_Data\Managed\UnityEngine.AudioModule.dll)
 
@@ -109,13 +110,13 @@ still need wheels, RCS blocks, plate structures to build the stargate craft
 and puddle jumpers that move through them.
 
 ### Build
-Running a **Release** build of this project will copy the "Stargate.dll" into the 
-"_.\package\Blaarkies\Stargate_" directory, and also attempt to copy that into
+Building this project will copy the _"Stargate.dll"_ into the 
+"_.\dist\Blaarkies\Stargate_" directory, and also attempt to copy that into
 "_..\Kerbal Space Program\GameData\Blaarkies\Stargate_".
 
-An after-build command will attempt to run "KspShortcut.lnk", which should
+An after-build command will attempt to run _"KspShortcut.lnk"_, which should
 load up KSP to test the changes. Make sure this shortcut points to your 
-"_KSP_x64.exe_" file.
+"_KSP_x64.exe_" executable.
 
 The plan is to have a build script that compiles a ready to use package that
 then gets copied over to the KSP directory. This package should include all configs

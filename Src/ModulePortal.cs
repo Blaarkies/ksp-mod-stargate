@@ -1,6 +1,6 @@
-﻿using System;
-using Stargate.Interface;
+﻿using Stargate.Domain;
 using Stargate.Utilities;
+using UnityEngine;
 
 namespace Stargate
 {
@@ -138,11 +138,15 @@ namespace Stargate
             _ecConsumerDialing.ConsumeContinuous();
 
             _stargateDialer.StartDialingSequence(
-                () =>
+                wormhole,
+                completeCallback =>
                 {
-                    BlaarkiesLog.OnScreen($"Dialing complete");
-
+                    // dialing sequence has completed
+                    _ecConsumerDialing.Stop();
                     _nqConsumer.ConsumeContinuous();
+                    wormhole.Open(
+                        () => completeCallback?.Invoke(),
+                        () => _nqConsumer.Stop());
                 });
         }
 
@@ -152,6 +156,6 @@ namespace Stargate
             _ecConsumerDialing.Update();
             _nqConsumer.Update();
         }
-
     }
+
 }

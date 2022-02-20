@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Stargate.Domain;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace Stargate.Utilities
 {
@@ -14,34 +17,27 @@ namespace Stargate.Utilities
     /// </summary>
     public class Wormhole
     {
-        private readonly Vessel _subject;
         private readonly Vessel _originGate;
         private readonly Vessel _destinationGate;
+        private readonly Part _originGatePart;
 
         private readonly Dictionary<int, Action<Vector3>> _teleportMethodMap;
+        private bool _isActive;
+        private Vessel _subject;
+        private Action _onCloseCallback;
+        private Action _onTeleportedCallback;
 
         public readonly bool Valid;
+
 
         public Wormhole(Vessel originGate, StargateSelector stargateSelector)
         {
             _originGate = originGate;
+            _originGatePart = originGate.parts.First(p => p.Modules.Contains(nameof(ModulePortal)));
             _destinationGate = FlightGlobals.FindVessel(stargateSelector.SelectedStargateId);
             if (!_destinationGate)
             {
                 BlaarkiesLog.OnScreen($"No other gate selected");
-                Valid = false;
-                return;
-            }
-
-            var gateLocation = _originGate.CoM;
-            var gateActiveSize = _originGate.vesselSize.magnitude * 2 + 100f;
-
-            _subject = FlightGlobals.FindNearestVesselWhere(gateLocation,
-                    v => v != _originGate && Vector3.Distance(v.CoM, gateLocation) < gateActiveSize)
-                .FirstOrDefault();
-            if (!_subject)
-            {
-                BlaarkiesLog.OnScreen($"No vessel in range");
                 Valid = false;
                 return;
             }
@@ -61,6 +57,9 @@ namespace Stargate.Utilities
 
         public void TeleportSubject()
         {
+            new SoundEffect(Sounds.WormholeStep, _subject.gameObject) { volume = GameSettings.SHIP_VOLUME * .3f }
+                .Play();
+
             var gateLocation = _originGate.CoM;
             var relativeOffset = gateLocation - _subject.CoM;
 
@@ -68,6 +67,8 @@ namespace Stargate.Utilities
                                 + 2 * _destinationGate.LandedOrSplashed.ToSign();
 
             _teleportMethodMap[methodBitmask].Invoke(relativeOffset);
+
+            _onTeleportedCallback?.Invoke();
         }
 
         private void HandleToOrbitWormhole(Vector3 offset)
@@ -121,7 +122,72 @@ namespace Stargate.Utilities
                 newOrbit,
                 Planetarium.GetUniversalTime(),
                 newOrbit.referenceBody);
+        }
 
+        public void Update()
+        {
+            if (!_isActive)
+            {
+                return;
+            }
+
+            var gateLocation = _originGatePart.CoMOffset + _originGate.CoM;
+            var gateActiveSize = _originGatePart.prefabSize.magnitude * .7f;
+
+            _subject = FlightGlobals.FindNearestVesselWhere(gateLocation,
+                    v => v != _originGate && Vector3.Distance(v.CoM, gateLocation) < gateActiveSize)
+                .FirstOrDefault();
+
+            if (_subject != null)
+            {
+                TeleportSubject();
+                Close();
+                BlaarkiesLog.OnScreen($"Teleported subject");
+            }
+        }
+
+        public void Open(Action onCloseCallback, Action onTeleportedCallback)
+        {
+            if (_isActive)
+            {
+                return;
+            }
+
+            _isActive = true;
+            _onCloseCallback = onCloseCallback;
+            _onTeleportedCallback = onTeleportedCallback;
+        }
+
+        public void Close()
+        {
+            if (!_isActive)
+            {
+                return;
+            }
+
+            _isActive = false;
+
+            _destinationGate.Load();
+            var stargatePart = _destinationGate.parts.First(part => part.Modules.Contains(nameof(ModulePortal)));
+            var animatorEventHorizon = new BlaarkiesAnimator(
+                stargatePart,
+                Animations.EventHorizonAction,
+                1, 3f);
+            animatorEventHorizon.Play(0f, 1f);
+
+            var timeToKeepWormholeOpen = Random.Range(3, 10);
+            stargatePart.gameObject.AddComponent<Waiter>()
+                .DoAction(() => new SoundEffect(Sounds.GateClose, stargatePart.gameObject)
+                            { volume = GameSettings.SHIP_VOLUME * .5f }
+                        .Play(),
+                    timeToKeepWormholeOpen);
+            stargatePart.gameObject.AddComponent<Waiter>()
+                .DoAction(() =>
+                    {
+                        _onCloseCallback?.Invoke();
+                        animatorEventHorizon.PlayReverse();
+                    },
+                    timeToKeepWormholeOpen + 1.3f);
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Stargate.Interface
+namespace Stargate.Domain
 {
     public class ResourceConsumerConfig
     {

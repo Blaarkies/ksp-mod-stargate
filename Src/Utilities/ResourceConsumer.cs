@@ -1,4 +1,5 @@
-﻿using Stargate.Interface;
+﻿using Stargate.Domain;
+using UnityEngine;
 
 namespace Stargate.Utilities
 {
@@ -11,6 +12,7 @@ namespace Stargate.Utilities
         private readonly ResourceConsumerConfig _config;
 
         private readonly int _resourceId;
+        private readonly string _resourceName;
         private readonly Part _part;
 
         private bool _isConsuming = false;
@@ -33,6 +35,7 @@ namespace Stargate.Utilities
             Part part,
             ResourceConsumerConfig config)
         {
+            _resourceName = resourceName;
             _part = part;
             var definition = PartResourceLibrary.Instance
                 .GetDefinition(resourceName);
@@ -54,6 +57,11 @@ namespace Stargate.Utilities
 
         public void ConsumeContinuous()
         {
+            if (_isConsuming)
+            {
+                return;
+            }
+
             _isConsuming = true;
             _watch.Start();
         }
@@ -66,16 +74,27 @@ namespace Stargate.Utilities
                 return;
             }
 
-            var consumed = _part.RequestResource(_resourceId, _costPerTickActive);
-
             _watch.Tick();
 
-            if (consumed < _costPerTickActive)
+            var consumed = _part.RequestResource(_resourceId, _costPerTickActive);
+            if (consumed < _costPerTickActive * .9)
             {
+                Debug.Log($"Consumed only {consumed} {_resourceName}. Attempted {_costPerTickActive}");
                 _isConsuming = false;
                 _config.onRanOutOfResource?.Invoke();
-                _watch.Start();
+                _watch.Stop();
             }
+        }
+
+        public void Stop()
+        {
+            if (!_isConsuming)
+            {
+                return;
+            }
+
+            _isConsuming = false;
+            _watch.Stop();
         }
     }
 }

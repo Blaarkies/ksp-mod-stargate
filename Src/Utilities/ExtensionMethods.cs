@@ -24,5 +24,19 @@ namespace Stargate.Utilities
         {
             return value ? 1 : 0;
         }
+
+        public static float CoerceAtMost(this float value, float threshold)
+        {
+            return value > threshold
+                ? threshold
+                : value;
+        }
+
+        public static float CoerceAtLeast(this float value, float threshold)
+        {
+            return value < threshold
+                ? threshold
+                : value;
+        }
     }
 }
