@@ -26,9 +26,9 @@ namespace Stargate.Utilities
         private Vessel _subject;
         private Action _onCloseCallback;
         private Action _onTeleportedCallback;
+        private Func<double, bool> _onTransferOfMassCallback;
 
         public readonly bool Valid;
-
 
         public Wormhole(Vessel originGate, StargateSelector stargateSelector)
         {
@@ -46,25 +46,39 @@ namespace Stargate.Utilities
 
             _teleportMethodMap = new Dictionary<int, Action<Vector3>>
             {
-                { 0, HandleToOrbitWormhole }, // orbit -> orbit
-                { 1, HandleToOrbitWormhole }, // surface -> orbit
-                { 2, HandleOrbitToSurfaceWormhole }, // orbit -> surface
+                { 0b00, HandleToOrbitWormhole }, // orbit -> orbit
+                { 0b01, HandleToOrbitWormhole }, // surface -> orbit
+                { 0b10, HandleOrbitToSurfaceWormhole }, // orbit -> surface
                 // { 2, HandleOrbitToSurfaceWormhole },
                 // { 3, HandleSurfaceToSurfaceWormhole }, // surface -> surface
-                { 3, HandleOrbitToSurfaceWormhole }, // surface -> surface
+                { 0b11, HandleOrbitToSurfaceWormhole }, // surface -> surface
             };
         }
 
         public void TeleportSubject()
         {
+            var hasSuppliedTransferCost = _onTransferOfMassCallback(_subject.totalMass);
+            if (!hasSuppliedTransferCost)
+            {
+                new SoundEffect(Sounds.GateDialFail, _originGatePart.gameObject) { volume = GameSettings.SHIP_VOLUME * .5f }
+                    .Play();
+                BlaarkiesLog.OnScreen($"Not enough Naquadah to handle this craft's mass");
+                return;
+            }
+
+            var distance = Vector3.Distance(_originGate.CoM, _destinationGate.CoM);
+            var ratioToPlanet = distance / _originGate.mainBody.Radius;
+            BlaarkiesLog.Debug($"Teleporting {ratioToPlanet.Round(2)}-way around {_originGate.mainBody.name}",
+                "distanceToTravel");
+
             new SoundEffect(Sounds.WormholeStep, _subject.gameObject) { volume = GameSettings.SHIP_VOLUME * .3f }
                 .Play();
 
             var gateLocation = _originGate.CoM;
             var relativeOffset = gateLocation - _subject.CoM;
 
-            var methodBitmask = _subject.LandedOrSplashed.ToSign()
-                                + 2 * _destinationGate.LandedOrSplashed.ToSign();
+            var methodBitmask = _subject.LandedOrSplashed.ToBinary()
+                                + 2 * _destinationGate.LandedOrSplashed.ToBinary();
 
             _teleportMethodMap[methodBitmask].Invoke(relativeOffset);
 
@@ -107,12 +121,12 @@ namespace Stargate.Utilities
 
             try
             {
-                OrbitPhysicsManager.HoldVesselUnpack(2);
+                OrbitPhysicsManager.HoldVesselUnpack(2); // TODO: what effect does releaseAfter have?
             }
             catch (NullReferenceException)
             {
-                Debug.Log("Could not hold vessel unpacked");
-                BlaarkiesLog.OnScreen("Wormhole malfunction");
+                BlaarkiesLog.Debug("Could not hold vessel unpacked");
+                BlaarkiesLog.OnScreen("Wormhole malfunctioned");
                 return;
             }
 
@@ -146,7 +160,9 @@ namespace Stargate.Utilities
             }
         }
 
-        public void Open(Action onCloseCallback, Action onTeleportedCallback)
+        public void Open(Action onCloseCallback,
+            Action onTeleportedCallback,
+            Func<double, bool> onTransferOfMassCallback)
         {
             if (_isActive)
             {
@@ -156,15 +172,11 @@ namespace Stargate.Utilities
             _isActive = true;
             _onCloseCallback = onCloseCallback;
             _onTeleportedCallback = onTeleportedCallback;
+            _onTransferOfMassCallback = onTransferOfMassCallback;
         }
 
         public void Close()
         {
-            if (!_isActive)
-            {
-                return;
-            }
-
             _isActive = false;
 
             _destinationGate.Load();

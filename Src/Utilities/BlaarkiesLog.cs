@@ -29,7 +29,8 @@ namespace Stargate.Utilities
             }
 
             var lastDebugTime = LastDebugDateTimeMap[category];
-            if (DateTime.Now - lastDebugTime > TimeSpan.FromSeconds(waitSeconds))
+            if (waitSeconds == 0
+                || DateTime.Now - lastDebugTime > TimeSpan.FromSeconds(waitSeconds))
             {
                 LastDebugDateTimeMap[category] = DateTime.Now;
                 UnityEngine.Debug.Log($"{MOD_NAME}[Debug] {message}");

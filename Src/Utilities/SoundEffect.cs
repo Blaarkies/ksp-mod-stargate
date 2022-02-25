@@ -9,20 +9,23 @@ namespace Stargate.Utilities
     public class SoundEffect
     {
         public float volume { get; set; } = GameSettings.SHIP_VOLUME;
-        public bool isLoop { get; set; } = false;
+        private readonly bool _isLoop;
 
         private const string path = "Blaarkies/Stargate/sound/";
         private const string logCategory = "audio-setup";
 
+        private readonly GameObject _gameObject;
         private readonly List<AudioSource> _audioSources;
         private readonly Cycler _fileCycler;
 
         public SoundEffect(SoundPack soundPack, GameObject gameObject)
         {
-            isLoop = soundPack.IsLoop;
+            _gameObject = gameObject;
+            _isLoop = soundPack.IsLoop;
             _audioSources = Enumerable.Range(1, soundPack.Count)
                 .Select(index => GetSoundFileAudioSource($"{soundPack.BaseName}{index}", gameObject))
-                .ToList();
+                .ToList()
+                .Shuffle();
             _fileCycler = new Cycler(soundPack.Count);
         }
 
@@ -54,12 +57,18 @@ namespace Stargate.Utilities
             _fileCycler.Next();
 
             var source = _audioSources[_fileCycler.Index];
-            source.loop = isLoop;
+            source.loop = _isLoop;
             source.volume = volume;
             source.time = 0f;
 
-            Debug.Log($"Cycler for {_audioSources[0].clip.name} at index {_fileCycler.Index} of {_audioSources.Count} to play");
-            source.Play();
+            if (delay == 0f)
+            {
+                source.Play();
+                return;
+            }
+
+            _gameObject.AddComponent<Waiter>()
+                .DoAction(() => source.Play(), delay);
         }
 
         public void Stop()

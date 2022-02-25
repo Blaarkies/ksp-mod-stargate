@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using Stargate.Domain;
+using UniLinq;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace Stargate.Utilities
 {
@@ -37,11 +40,15 @@ namespace Stargate.Utilities
                 4, .6f, WrapMode.Loop);
 
             var gameObject = _stargate.gameObject;
-            var soundChevron = new SoundEffect(Sounds.Chevron, gameObject){volume = GameSettings.SHIP_VOLUME *.8f};
-            var soundRoll = new SoundEffect(Sounds.GateRollLong, gameObject){volume = GameSettings.SHIP_VOLUME *.5f};
-            var soundChevronLock = new SoundEffect(Sounds.ChevronLock, gameObject){volume = GameSettings.SHIP_VOLUME *.8f};
-            var soundGateOpen = new SoundEffect(Sounds.GateOpen, gameObject){volume = GameSettings.SHIP_VOLUME *.8f};
-            var soundWormholeLoop = new SoundEffect(Sounds.WormholeEventhorizonLoop, gameObject){isLoop = true};
+            var soundChevron = new SoundEffect(Sounds.Chevron, gameObject) { volume = GameSettings.SHIP_VOLUME * .8f };
+            var soundRoll = new SoundEffect(Sounds.GateRollLong, gameObject)
+                { volume = GameSettings.SHIP_VOLUME * .5f };
+            var soundChevronLock = new SoundEffect(Sounds.ChevronLock, gameObject)
+                { volume = GameSettings.SHIP_VOLUME * .8f };
+            var soundGateOpen = new SoundEffect(Sounds.GateOpen, gameObject)
+                { volume = GameSettings.SHIP_VOLUME * .8f };
+            var soundWormholeLoop = new SoundEffect(Sounds.WormholeEventhorizonLoop, gameObject)
+                { volume = GameSettings.SHIP_VOLUME * .6f };
 
             _watch.DoAt(0, () =>
             {
@@ -72,6 +79,7 @@ namespace Stargate.Utilities
             {
                 animatorRingSpin.Continue();
                 soundRoll.Play();
+                soundGateOpen.Play(1f);
             });
             _watch.DoAt(8, () =>
             {
@@ -80,7 +88,6 @@ namespace Stargate.Utilities
                 animatorChevronEngageBottom.Play();
                 animatorChevronEngageTop.Play();
                 soundChevronLock.Play();
-                soundGateOpen.Play(2f); // TODO: check delay
             });
             _watch.DoAt(9, () =>
             {
@@ -90,13 +97,86 @@ namespace Stargate.Utilities
             _watch.DoAt(9.5f, () =>
             {
                 soundWormholeLoop.Play();
-                // TODO: stop loop sound when gate closes
 
                 KillPartsInsideVortex();
                 CreateEventHorizon();
 
-                onComplete?.Invoke(() => soundWormholeLoop.Stop());
-                // _isDialing =  false;
+                onComplete?.Invoke(() =>
+                {
+                    soundWormholeLoop.Stop();
+                    _isDialing = false;
+                });
+                _watch.Stop();
+            });
+
+            _watch.Start();
+        }
+
+        public void StartDhdSequence(Wormhole wormhole, Action<Action> onComplete)
+        {
+            _wormhole = wormhole;
+            _isDialing = true;
+
+            var animatorEventHorizon = new BlaarkiesAnimator(_stargate, Animations.EventHorizonAction,
+                1, 20f);
+
+            var animatorKawoosh = new BlaarkiesAnimator(_stargate, Animations.KawooshAction,
+                2, 1.5f);
+
+            var gameObject = _stargate.gameObject;
+            var soundRollStart = new SoundEffect(Sounds.GateRollShort, gameObject)
+                { volume = GameSettings.SHIP_VOLUME * .2f };
+            var soundRollLoop = new SoundEffect(Sounds.GateRollLoop, gameObject)
+                { volume = GameSettings.SHIP_VOLUME * .9f };
+            var soundGateOpen = new SoundEffect(Sounds.GateOpen, gameObject)
+                { volume = GameSettings.SHIP_VOLUME * .8f };
+            var soundWormholeLoop = new SoundEffect(Sounds.WormholeEventhorizonLoop, gameObject)
+                { volume = GameSettings.SHIP_VOLUME * .6f };
+            var soundInstancesDhd = new List<SoundEffect>
+            {
+                new SoundEffect(Sounds.Dhd, gameObject) { volume = GameSettings.SHIP_VOLUME * .2f },
+                new SoundEffect(Sounds.Dhd, gameObject) { volume = GameSettings.SHIP_VOLUME * .2f },
+            };
+            var dhdInstanceCycler = new Cycler(1);
+
+            _watch.DoAt(0, () =>
+            {
+                soundRollStart.Play();
+                soundRollLoop.Play(1f);
+            });
+
+            Enumerable.Range(0, 5)
+                .Select(t => .5f * t + Random.Range(0, .3f))
+                .ToList()
+                .ForEach(t => _watch.DoAt(t, () =>
+                {
+                    soundInstancesDhd[dhdInstanceCycler.Index].Play();
+                    dhdInstanceCycler.Next();
+                }));
+
+            _watch.DoAt(3f, () =>
+            {
+                soundInstancesDhd[dhdInstanceCycler.Index].Play();
+                soundGateOpen.Play();
+                soundRollLoop.Stop();
+            });
+            _watch.DoAt(3.5f, () =>
+            {
+                animatorEventHorizon.Play();
+                animatorKawoosh.Play();
+            });
+            _watch.DoAt(3.5f, () =>
+            {
+                soundWormholeLoop.Play();
+
+                KillPartsInsideVortex();
+                CreateEventHorizon();
+
+                onComplete?.Invoke(() =>
+                {
+                    soundWormholeLoop.Stop();
+                    _isDialing = false;
+                });
                 _watch.Stop();
             });
 

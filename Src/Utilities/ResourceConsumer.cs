@@ -55,6 +55,21 @@ namespace Stargate.Utilities
             return available >= totalActivationCost;
         }
 
+        public bool ConsumeUnitPerTon(double tonMeasure)
+        {
+            // TODO: test if resources available. if not, don't even consume, just return false
+            var demand = tonMeasure * _config.costPerTon;
+            var consumed = _part.RequestResource(_resourceId, demand);
+            if (consumed < demand * .9)
+            {
+                BlaarkiesLog.Debug($"Consumed only [{consumed}] {_resourceName}. Attempted {demand}");
+                _config.onRanOutOfResource?.Invoke();
+                return false;
+            }
+
+            return true;
+        }
+
         public void ConsumeContinuous()
         {
             if (_isConsuming)
@@ -96,5 +111,6 @@ namespace Stargate.Utilities
             _isConsuming = false;
             _watch.Stop();
         }
+
     }
 }

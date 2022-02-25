@@ -4,7 +4,7 @@ using UniLinq;
 namespace Stargate.Utilities
 {
     /// <summary>
-    /// Handles the targeting and cycling through stargates
+    /// Handles the targeting and cycling through stargate selections
     /// </summary>
     public class StargateSelector
     {
@@ -30,6 +30,9 @@ namespace Stargate.Utilities
 
         private (Guid, string) GetCycledStargateVesselName(int cycleShift)
         {
+            // TODO: unloaded vessels don't display part.modules, this prevents searching/filtering to select only
+            // stargates. Determine how to flag vessels as stargates (persistent data, or load craft when querying, ...)
+
             // var stargates = FlightGlobals.Vessels
             //     .Where(v => v.protoVessel.vesselModules.values.Contains(nameof(ModulePortal)));
             // BlaarkiesLog.OnScreen($"{stargates.Count()} stargates found");
@@ -50,7 +53,7 @@ namespace Stargate.Utilities
             var indexOfSelection = CanConnect
                 ? otherGates.TakeWhile(v => v.id != SelectedStargateId).Count()
                 : 0;
-            var nextIndex = (indexOfSelection + cycleShift) % otherGates.Count();
+            var nextIndex = Cycler.GetShiftFrom(otherGates.Count(), cycleShift, indexOfSelection);
             var newGate = otherGates.ElementAt(nextIndex < 0 ? nextIndex + otherGates.Count() : nextIndex);
 
             return (newGate.id, newGate.vesselName);

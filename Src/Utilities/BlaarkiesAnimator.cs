@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -6,7 +7,7 @@ namespace Stargate.Utilities
 {
     public class BlaarkiesAnimator
     {
-        private readonly Part _part;
+        private readonly GameObject _gameObject;
         private readonly string _name;
         private readonly int _layer;
         private readonly float _speed;
@@ -21,13 +22,13 @@ namespace Stargate.Utilities
             float speed,
             WrapMode wrapMode = WrapMode.ClampForever)
         {
-            _part = part;
+            _gameObject = part.gameObject;
             _name = name;
             _layer = layer;
             _speed = speed;
 
 
-            var animators = _part.FindModelAnimators(name);
+            var animators = part.FindModelAnimators(name);
             _animators = GetAnimations(animators, name).ToList();
             _animators.ForEach(animator =>
             {
@@ -48,15 +49,27 @@ namespace Stargate.Utilities
                 });
         }
 
-        public void Play(float speedFactor = 1f, float playHead = 0f)
+        public void Play(float speedFactor = 1f, float playHead = 0f, float delay = 0f)
         {
-            _animators.ForEach(animator =>
+            var playCallback = new Action(() =>
             {
-                var state = animator.State;
-                state.speed = _speed * speedFactor;
-                state.normalizedTime = playHead;
-                animator.Animation.Play(_name);
+                _animators.ForEach(animator =>
+                {
+                    var state = animator.State;
+                    state.speed = _speed * speedFactor;
+                    state.normalizedTime = playHead;
+                    animator.Animation.Play(_name);
+                });
             });
+
+            if (delay == 0f)
+            {
+                playCallback();
+                return;
+            }
+
+            _gameObject.AddComponent<Waiter>()
+                .DoAction(() => playCallback(), delay);
         }
 
         public void PlayReverse()
@@ -93,10 +106,10 @@ namespace Stargate.Utilities
         public void Stop()
         {
             _animators.ForEach(animator =>
-                {
-                    animator.Animation.Stop(_name);
-                    animator.Animation.Rewind(_name);
-                });
+            {
+                animator.Animation.Stop(_name);
+                animator.Animation.Rewind(_name);
+            });
         }
     }
 }

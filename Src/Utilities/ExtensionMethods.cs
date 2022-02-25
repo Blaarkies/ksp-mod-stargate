@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using UniLinq;
 using UnityEngine;
+using Random = System.Random;
 
 namespace Stargate.Utilities
 {
@@ -15,12 +18,12 @@ namespace Stargate.Utilities
             return new Vector3(vector.x, vector.y, vector.z);
         }
 
-        public static double Round(this double value)
+        public static double Round(this double value, int digits = 0)
         {
-            return Math.Round(value);
+            return Math.Round(value, digits);
         }
 
-        public static int ToSign(this bool value)
+        public static int ToBinary(this bool value)
         {
             return value ? 1 : 0;
         }
@@ -37,6 +40,19 @@ namespace Stargate.Utilities
             return value < threshold
                 ? threshold
                 : value;
+        }
+
+        public static List<T> Shuffle<T>(this IList<T> list)
+        {
+            var rng = new Random();
+            var n = list.Count;
+            while (n > 1) {
+                n--;
+                var k = rng.Next(n + 1);
+                (list[k], list[n]) = (list[n], list[k]);
+            }
+
+            return list.ToList();
         }
     }
 }

@@ -1,0 +1,6 @@
+https://www.gian-cursio.net/2021/03/stargate-2020-sg1-showcase/
+
+Author: David Gian-Cursio
+- Stargate SG1 model
+
+Although not used directly, this model was used to "trace" a low polygon count model by hand with separated objects and additions to work in KSP. The provided textures have been used where applicable.

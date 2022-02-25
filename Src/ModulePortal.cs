@@ -7,6 +7,16 @@ namespace Stargate
     public class ModulePortal : PartModule
     {
         [KSPField(
+            guiName = "Status",
+            groupName = "stargate",
+            guiActive = true,
+            unfocusedRange = 200f,
+            guiActiveUnfocused = true)]
+#pragma warning disable 414
+        private string _status = "Idle";
+#pragma warning restore 414
+
+        [KSPField(
             guiName = "Target Stargate",
             groupName = "stargate",
             guiActive = true,
@@ -111,7 +121,7 @@ namespace Stargate
 
         [KSPEvent(
             name = "dialButton",
-            guiName = "Dial Target Gate",
+            guiName = "SGC Dial Target Gate",
             groupName = "stargate",
             guiActive = true,
             active = true,
@@ -146,7 +156,50 @@ namespace Stargate
                     _nqConsumer.ConsumeContinuous();
                     wormhole.Open(
                         () => completeCallback?.Invoke(),
-                        () => _nqConsumer.Stop());
+                        () => _nqConsumer.Stop(),
+                        mass => _nqConsumer.ConsumeUnitPerTon(mass));
+                });
+        }
+
+        [KSPEvent(
+            name = "dhdButton",
+            guiName = "DHD Dial Target Gate",
+            groupName = "stargate",
+            guiActive = true,
+            active = true,
+            unfocusedRange = 100f,
+            externalToEVAOnly = false,
+            guiActiveUnfocused = true,
+            guiActiveUncommand = true,
+            requireFullControl = false)]
+        public void DhdTargetGate()
+        {
+            var wormhole = new Wormhole(vessel, _stargateSelector);
+            if (!wormhole.Valid)
+            {
+                return;
+            }
+
+            var canStartDialSequence = _nqConsumer.HasActivationResources();
+            if (!canStartDialSequence)
+            {
+                BlaarkiesLog.OnScreen($"Not enough Naquadah");
+                return;
+            }
+
+            _ecConsumerDialing.ConsumeContinuous();
+
+            _stargateDialer.StartDhdSequence(
+                wormhole,
+                completeCallback =>
+                {
+                    // dialing sequence has completed
+                    _ecConsumerDialing.Stop();
+                    _nqConsumer.ConsumeContinuous();
+                    wormhole.Open(
+                        () => completeCallback?.Invoke(),
+                        () => _nqConsumer.Stop(),
+                        mass => _nqConsumer.ConsumeUnitPerTon(mass));
                 });
         }
 
