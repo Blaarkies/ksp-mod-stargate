@@ -7,6 +7,8 @@ namespace Stargate.Utilities
 {
     public class BlaarkiesAnimator
     {
+        public static int lastLayer = 1;
+
         private readonly GameObject _gameObject;
         private readonly string _name;
         private readonly int _layer;
@@ -18,15 +20,13 @@ namespace Stargate.Utilities
         public BlaarkiesAnimator(
             Part part,
             string name,
-            int layer,
             float speed,
             WrapMode wrapMode = WrapMode.ClampForever)
         {
             _gameObject = part.gameObject;
             _name = name;
-            _layer = layer;
+            _layer = lastLayer++;
             _speed = speed;
-
 
             var animators = part.FindModelAnimators(name);
             _animators = GetAnimations(animators, name).ToList();
@@ -103,13 +103,30 @@ namespace Stargate.Utilities
             });
         }
 
-        public void Stop()
+        public void Stop(float delay = 0f)
         {
-            _animators.ForEach(animator =>
+            var playCallback = new Action(() =>
             {
-                animator.Animation.Stop(_name);
-                animator.Animation.Rewind(_name);
+                _animators.ForEach(animator =>
+                {
+                    // .Stop prevents the model from updating?
+                    // animator.Animation.Stop(_name);
+
+                    animator.Animation.Rewind(_name);
+                    animator.State.normalizedTime = 0f;
+
+                    animator.State.speed = 0f;
+                });
             });
+
+            if (delay == 0f)
+            {
+                playCallback();
+                return;
+            }
+
+            _gameObject.AddComponent<Waiter>()
+                .DoAction(() => playCallback(), delay);
         }
     }
 }

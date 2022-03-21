@@ -24,77 +24,102 @@ namespace Stargate.Utilities
             _wormhole = wormhole;
             _isDialing = true;
 
-            var animatorEventHorizon = new BlaarkiesAnimator(_stargate, Animations.EventHorizonAction,
-                1, 20f);
+            var animatorEventHorizon = new BlaarkiesAnimator(_stargate, Animations.EventHorizon, 20f);
+            var animatorKawoosh = new BlaarkiesAnimator(_stargate, Animations.Kawoosh, 1.5f);
+            var animatorRingSpin = new BlaarkiesAnimator(_stargate, Animations.RingSpin, .4f, WrapMode.Loop);
 
-            var animatorKawoosh = new BlaarkiesAnimator(_stargate, Animations.KawooshAction,
-                2, 1.5f);
+            var animatorChevronOriginPick = new BlaarkiesAnimator(_stargate, Animations.ChevronOriginPick, 3f);
+            var animatorChevronOriginBlock = new BlaarkiesAnimator(_stargate, Animations.ChevronOriginBlock, 3f);
+            var animatorChevronOriginBlockLight =
+                new BlaarkiesAnimator(_stargate, Animations.ChevronOriginBlockLight, 100f);
+            var animatorChevronOriginPickLight =
+                new BlaarkiesAnimator(_stargate, Animations.ChevronOriginPickLight, 100f);
 
-            var animatorChevronEngageBottom = new BlaarkiesAnimator(_stargate, Animations.ChevronBottomEngageAction,
-                3, 3f);
+            void AnimateOriginChevron(bool noReset = false)
+            {
+                animatorChevronOriginPick.Play();
+                animatorChevronOriginBlock.Play();
 
-            var animatorChevronEngageTop = new BlaarkiesAnimator(_stargate, Animations.ChevronTopEngageAction,
-                4, 3f);
+                animatorChevronOriginBlockLight.Play();
+                animatorChevronOriginPickLight.Play();
 
-            var animatorRingSpin = new BlaarkiesAnimator(_stargate, Animations.RingSpinAction,
-                4, .6f, WrapMode.Loop);
+                if (noReset)
+                {
+                    return;
+                }
+
+                animatorChevronOriginBlockLight.Stop(.9f);
+                animatorChevronOriginPickLight.Stop(.9f);
+            }
+
+            var animatorsChevronLights = new[]
+                {
+                    Animations.ChevronLight1,
+                    Animations.ChevronLight2,
+                    Animations.ChevronLight3,
+                    Animations.ChevronLight4,
+                    Animations.ChevronLight5,
+                    Animations.ChevronLight6,
+                }
+                .Select(animationName => new BlaarkiesAnimator(_stargate, animationName, 100f))
+                .ToList();
 
             var gameObject = _stargate.gameObject;
-            var soundChevron = new SoundEffect(Sounds.Chevron, gameObject) { volume = GameSettings.SHIP_VOLUME * .8f };
-            var soundRoll = new SoundEffect(Sounds.GateRollLong, gameObject)
-                { volume = GameSettings.SHIP_VOLUME * .5f };
-            var soundChevronLock = new SoundEffect(Sounds.ChevronLock, gameObject)
-                { volume = GameSettings.SHIP_VOLUME * .8f };
-            var soundGateOpen = new SoundEffect(Sounds.GateOpen, gameObject)
-                { volume = GameSettings.SHIP_VOLUME * .8f };
-            var soundWormholeLoop = new SoundEffect(Sounds.WormholeEventhorizonLoop, gameObject)
-                { volume = GameSettings.SHIP_VOLUME * .6f };
+            var volume = GameSettings.SHIP_VOLUME;
+            var soundChevron = new SoundEffect(Sounds.Chevron, gameObject) { volume = volume * .8f };
+            var soundRoll = new SoundEffect(Sounds.GateRollLong, gameObject) { volume = volume * .5f };
+            var soundChevronLock = new SoundEffect(Sounds.ChevronLock, gameObject) { volume = volume * .8f };
+            var soundGateOpen = new SoundEffect(Sounds.GateOpen, gameObject) { volume = volume * .8f };
+            var soundWormholeLoop = new SoundEffect(Sounds.EventhorizonLoop, gameObject) { volume = volume * .6f };
 
-            _watch.DoAt(0, () =>
-            {
-                animatorRingSpin.Play();
-                soundRoll.Play();
-            });
-            _watch.DoAt(2, () =>
-            {
-                animatorRingSpin.Pause();
-                animatorChevronEngageBottom.Play();
-                animatorChevronEngageTop.Play();
-                soundChevron.Play();
-            });
+            soundRoll.Play();
+            animatorRingSpin.Play();
 
-            _watch.DoAt(3, () =>
+            Enumerable.Range(1, 6)
+                .Select(t => new
+                {
+                    time = t * 5f + Random.Range(0f, 2f),
+                    index = t - 1
+                })
+                .ToList()
+                .ForEach(step =>
+                {
+                    _watch.DoAt(step.time, () =>
+                    {
+                        soundRoll.Stop();
+                        soundChevron.Play();
+                        animatorRingSpin.Pause();
+                        AnimateOriginChevron();
+
+                        animatorsChevronLights[step.index].Play();
+                    });
+
+                    _watch.DoAt(step.time + 1.5f, () =>
+                    {
+                        soundRoll.Play();
+                        if (step.index % 2 != 0)
+                            animatorRingSpin.Continue();
+                        else
+                            animatorRingSpin.ContinueReverse();
+                    });
+                });
+
+            _watch.DoAt(37, () =>
             {
-                animatorRingSpin.ContinueReverse();
-                soundRoll.Play();
-            });
-            _watch.DoAt(5.5f, () =>
-            {
-                animatorRingSpin.Pause();
-                animatorChevronEngageBottom.Play();
-                animatorChevronEngageTop.Play();
-                soundChevron.Play();
-            });
-            _watch.DoAt(6.5f, () =>
-            {
-                animatorRingSpin.Continue();
-                soundRoll.Play();
-                soundGateOpen.Play(1f);
-            });
-            _watch.DoAt(8, () =>
-            {
-                animatorRingSpin.Pause();
                 soundRoll.Stop();
-                animatorChevronEngageBottom.Play();
-                animatorChevronEngageTop.Play();
                 soundChevronLock.Play();
+                animatorRingSpin.Pause();
+                AnimateOriginChevron(true);
+                soundGateOpen.Play();
             });
-            _watch.DoAt(9, () =>
+
+            _watch.DoAt(38, () =>
             {
                 animatorEventHorizon.Play();
                 animatorKawoosh.Play();
             });
-            _watch.DoAt(9.5f, () =>
+
+            _watch.DoAt(39f, () =>
             {
                 soundWormholeLoop.Play();
 
@@ -117,26 +142,20 @@ namespace Stargate.Utilities
             _wormhole = wormhole;
             _isDialing = true;
 
-            var animatorEventHorizon = new BlaarkiesAnimator(_stargate, Animations.EventHorizonAction,
-                1, 20f);
-
-            var animatorKawoosh = new BlaarkiesAnimator(_stargate, Animations.KawooshAction,
-                2, 1.5f);
+            var animatorEventHorizon = new BlaarkiesAnimator(_stargate, Animations.EventHorizon, 20f);
+            var animatorKawoosh = new BlaarkiesAnimator(_stargate, Animations.Kawoosh, 1.5f);
 
             var gameObject = _stargate.gameObject;
-            var soundRollStart = new SoundEffect(Sounds.GateRollShort, gameObject)
-                { volume = GameSettings.SHIP_VOLUME * .2f };
-            var soundRollLoop = new SoundEffect(Sounds.GateRollLoop, gameObject)
-                { volume = GameSettings.SHIP_VOLUME * .9f };
-            var soundGateOpen = new SoundEffect(Sounds.GateOpen, gameObject)
-                { volume = GameSettings.SHIP_VOLUME * .8f };
-            var soundWormholeLoop = new SoundEffect(Sounds.WormholeEventhorizonLoop, gameObject)
-                { volume = GameSettings.SHIP_VOLUME * .6f };
-            var soundInstancesDhd = new List<SoundEffect>
-            {
-                new SoundEffect(Sounds.Dhd, gameObject) { volume = GameSettings.SHIP_VOLUME * .2f },
-                new SoundEffect(Sounds.Dhd, gameObject) { volume = GameSettings.SHIP_VOLUME * .2f },
-            };
+            var volume = GameSettings.SHIP_VOLUME;
+            var soundRollStart = new SoundEffect(Sounds.GateRollShort, gameObject) { volume = volume * .2f };
+            var soundRollLoop = new SoundEffect(Sounds.GateRollLoop, gameObject) { volume = volume * .9f };
+            var soundGateOpen = new SoundEffect(Sounds.GateOpen, gameObject) { volume = volume * .8f };
+            var soundWormholeLoop = new SoundEffect(Sounds.EventhorizonLoop, gameObject) { volume = volume * .6f };
+
+            // Use multiple instance of the same sound group to allow overlap
+            var soundInstancesDhd = Enumerable.Range(1, 2)
+                .Select(_ => new SoundEffect(Sounds.Dhd, gameObject) { volume = volume * .2f })
+                .ToList();
             var dhdInstanceCycler = new Cycler(1);
 
             _watch.DoAt(0, () =>

@@ -14,7 +14,7 @@
         public static SoundPack GateRollLoop = new SoundPack("gate_roll_loop", 1, true);
         public static SoundPack GateRollShort = new SoundPack("gate_roll_short", 2);
         public static SoundPack RingsTransport = new SoundPack("rings_transport", 4);
-        public static SoundPack WormholeEventhorizonLoop = new SoundPack("wormhole_eventhorizon_loop", 1, true);
+        public static SoundPack EventhorizonLoop = new SoundPack("wormhole_eventhorizon_loop", 1, true);
         public static SoundPack WormholeStep = new SoundPack("wormhole_step", 5);
         public static SoundPack WormholeTravel = new SoundPack("wormhole_travel", 1);
     }

@@ -181,10 +181,7 @@ namespace Stargate.Utilities
 
             _destinationGate.Load();
             var stargatePart = _destinationGate.parts.First(part => part.Modules.Contains(nameof(ModulePortal)));
-            var animatorEventHorizon = new BlaarkiesAnimator(
-                stargatePart,
-                Animations.EventHorizonAction,
-                1, 3f);
+            var animatorEventHorizon = new BlaarkiesAnimator(stargatePart, Animations.EventHorizon, 3f);
             animatorEventHorizon.Play(0f, 1f);
 
             var timeToKeepWormholeOpen = Random.Range(3, 10);
