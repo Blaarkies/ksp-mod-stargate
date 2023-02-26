@@ -62,7 +62,7 @@ namespace Stargate.Utilities
             var consumed = _part.RequestResource(_resourceId, demand);
             if (consumed < demand * .9)
             {
-                BlaarkiesLog.Debug($"Consumed only [{consumed}] {_resourceName}. Attempted {demand}");
+                BlaarkiesLog.DebugThrottled($"Consumed only [{consumed}] {_resourceName}. Attempted {demand}");
                 _config.onRanOutOfResource?.Invoke();
                 return false;
             }

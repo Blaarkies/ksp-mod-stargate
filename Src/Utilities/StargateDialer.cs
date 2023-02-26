@@ -64,6 +64,11 @@ namespace Stargate.Utilities
                 .Select(animationName => new BlaarkiesAnimator(_stargate, animationName, 100f))
                 .ToList();
 
+            var textureTransformName = ""
+            Transform target = _stargate.FindModelTransform(textureTransformName);
+            var rendererMaterial = target.GetComponent<Renderer>();
+            rendererMaterial.material.SetColor("_EmissiveColor", new Color(1f, 1f, 1f, 1f));
+
             var gameObject = _stargate.gameObject;
             var volume = GameSettings.SHIP_VOLUME;
             var soundChevron = new SoundEffect(Sounds.Chevron, gameObject) { volume = volume * .8f };
@@ -144,6 +149,21 @@ namespace Stargate.Utilities
 
             var animatorEventHorizon = new BlaarkiesAnimator(_stargate, Animations.EventHorizon, 20f);
             var animatorKawoosh = new BlaarkiesAnimator(_stargate, Animations.Kawoosh, 1.5f);
+            var animatorChevronOriginBlockLight =
+                new BlaarkiesAnimator(_stargate, Animations.ChevronOriginBlockLight, 100f);
+            var animatorChevronOriginPickLight =
+                new BlaarkiesAnimator(_stargate, Animations.ChevronOriginPickLight, 100f);
+            var animatorsChevronLights = new[]
+                {
+                    Animations.ChevronLight1,
+                    Animations.ChevronLight2,
+                    Animations.ChevronLight3,
+                    Animations.ChevronLight4,
+                    Animations.ChevronLight5,
+                    Animations.ChevronLight6,
+                }
+                .Select(animationName => new BlaarkiesAnimator(_stargate, animationName, 100f))
+                .ToList();
 
             var gameObject = _stargate.gameObject;
             var volume = GameSettings.SHIP_VOLUME;
@@ -165,18 +185,22 @@ namespace Stargate.Utilities
             });
 
             Enumerable.Range(0, 5)
-                .Select(t => .5f * t + Random.Range(0, .3f))
+                .Select(t => new { time = .5f * t + Random.Range(0, .3f), index = t })
                 .ToList()
-                .ForEach(t => _watch.DoAt(t, () =>
+                .ForEach(step => _watch.DoAt(step.time, () =>
                 {
                     soundInstancesDhd[dhdInstanceCycler.Index].Play();
                     dhdInstanceCycler.Next();
+                    animatorsChevronLights[step.index].Play();
                 }));
 
             _watch.DoAt(3f, () =>
             {
+                animatorChevronOriginBlockLight.Play();
+                animatorChevronOriginPickLight.Play();
                 soundInstancesDhd[dhdInstanceCycler.Index].Play();
                 soundGateOpen.Play();
+                soundRollStart.Stop();
                 soundRollLoop.Stop();
             });
             _watch.DoAt(3.5f, () =>

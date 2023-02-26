@@ -35,7 +35,7 @@ namespace Stargate.Utilities
 
             if (!GameDatabase.Instance.ExistsAudioClip(filePath))
             {
-                BlaarkiesLog.Debug($"Could not find file in DB [{fileName}]", logCategory);
+                BlaarkiesLog.DebugThrottled($"Could not find file in DB [{fileName}]", logCategory);
                 throw new Exception($"Could not find file in DB [{fileName}]");
             }
 

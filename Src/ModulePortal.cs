@@ -115,7 +115,7 @@ namespace Stargate
 
             if (wormhole.Valid)
             {
-                wormhole.TeleportSubject();
+                wormhole.TryToTeleport();
             }
         }
 

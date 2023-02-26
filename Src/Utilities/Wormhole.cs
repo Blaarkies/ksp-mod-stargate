@@ -21,9 +21,8 @@ namespace Stargate.Utilities
         private readonly Vessel _destinationGate;
         private readonly Part _originGatePart;
 
-        private readonly Dictionary<int, Action<Vector3>> _teleportMethodMap;
+        private readonly Dictionary<int, Action<Vector3, Vessel>> _teleportMethodMap;
         private bool _isActive;
-        private Vessel _subject;
         private Action _onCloseCallback;
         private Action _onTeleportedCallback;
         private Func<double, bool> _onTransferOfMassCallback;
@@ -44,7 +43,7 @@ namespace Stargate.Utilities
 
             Valid = true;
 
-            _teleportMethodMap = new Dictionary<int, Action<Vector3>>
+            _teleportMethodMap = new Dictionary<int, Action<Vector3, Vessel>>
             {
                 { 0b00, HandleToOrbitWormhole }, // orbit -> orbit
                 { 0b01, HandleToOrbitWormhole }, // surface -> orbit
@@ -55,37 +54,39 @@ namespace Stargate.Utilities
             };
         }
 
-        public void TeleportSubject()
+        private void TeleportSubject(Vessel subject)
         {
-            var hasSuppliedTransferCost = _onTransferOfMassCallback(_subject.totalMass);
+            var hasSuppliedTransferCost = _onTransferOfMassCallback(subject.totalMass);
             if (!hasSuppliedTransferCost)
             {
-                new SoundEffect(Sounds.GateDialFail, _originGatePart.gameObject) { volume = GameSettings.SHIP_VOLUME * .5f }
+                new SoundEffect(Sounds.GateDialFail, _originGatePart.gameObject)
+                        { volume = GameSettings.SHIP_VOLUME * .5f }
                     .Play();
-                BlaarkiesLog.OnScreen($"Not enough Naquadah to handle this craft's mass");
+                BlaarkiesLog.OnScreen($"Not enough Naquadah to handle {subject.name}'s mass");
                 return;
             }
 
             var distance = Vector3.Distance(_originGate.CoM, _destinationGate.CoM);
             var ratioToPlanet = distance / _originGate.mainBody.Radius;
-            BlaarkiesLog.Debug($"Teleporting {ratioToPlanet.Round(2)}-way around {_originGate.mainBody.name}",
+            BlaarkiesLog.DebugThrottled($"Teleporting {ratioToPlanet.Round(2)}-way around {_originGate.mainBody.name}",
                 "distanceToTravel");
 
-            new SoundEffect(Sounds.WormholeStep, _subject.gameObject) { volume = GameSettings.SHIP_VOLUME * .3f }
-                .Play();
+            var soundWormholeStep = new SoundEffect(Sounds.WormholeStep, subject.gameObject)
+                { volume = GameSettings.SHIP_VOLUME * .3f };
+            soundWormholeStep .Play();
 
             var gateLocation = _originGate.CoM;
-            var relativeOffset = gateLocation - _subject.CoM;
+            var relativeOffset = gateLocation - subject.CoM;
 
-            var methodBitmask = _subject.LandedOrSplashed.ToBinary()
+            var methodBitmask = subject.LandedOrSplashed.ToBinary()
                                 + 2 * _destinationGate.LandedOrSplashed.ToBinary();
 
-            _teleportMethodMap[methodBitmask].Invoke(relativeOffset);
+            _teleportMethodMap[methodBitmask].Invoke(relativeOffset, subject);
 
             _onTeleportedCallback?.Invoke();
         }
 
-        private void HandleToOrbitWormhole(Vector3 offset)
+        private void HandleToOrbitWormhole(Vector3 offset, Vessel subject)
         {
             var newOrbit = Orbit.OrbitFromStateVectors(
                 _destinationGate.CoM - offset,
@@ -94,30 +95,52 @@ namespace Stargate.Utilities
                 Planetarium.GetUniversalTime()
             );
 
-            SetNewOrbit(newOrbit);
+            SetNewOrbit(newOrbit, subject);
         }
 
-        private void HandleOrbitToSurfaceWormhole(Vector3 offset)
+        private void HandleOrbitToSurfaceWormhole(Vector3 offsetOrigin, Vessel subject)
         {
-            _subject.Splashed = false;
-            _subject.Landed = false;
-            _subject.landedAt = null;
+            subject.Splashed = false;
+            subject.Landed = false;
+            subject.landedAt = null;
 
-            _subject.SetPosition(_destinationGate.CoM - offset);
-            _subject.SetWorldVelocity(_destinationGate.obt_velocity - _subject.srf_velocity);
+            var originGateLocation = _originGatePart.CoMOffset + _originGate.CoM;
+
+            var originGateRotation = (_originGatePart.orgRot * _originGate.srfRelRotation).eulerAngles.normalized;
+            var relativeLocation = originGateLocation - subject.CoM;
+            var originOffsetLocation = originGateRotation - relativeLocation;
+
+            var destinationGateRotation = (/*_destinationGate.parts.findStargatePart.orgRot **/
+                _destinationGate.srfRelRotation).eulerAngles.normalized;
+            var destinationOffsetLocation = destinationGateRotation + originOffsetLocation;
+            var destinationGateLocation = _destinationGate.CoM;
+
+            var originGateVelocity = _originGate.velocityD;
+
+            var relativeVelocity = originGateVelocity - subject.velocityD;
+            var originOffsetVelocityDirection = originGateRotation - relativeVelocity.normalized;
+
+            var destinationGateVelocity = _destinationGate.velocityD;
+            var destinationOffsetVelocityDirection = destinationGateRotation + originOffsetVelocityDirection;
+            var reflectedVelocityDirection =
+                Vector3d.Reflect(destinationOffsetVelocityDirection, destinationGateRotation);
+            var destinationOffsetVelocity = reflectedVelocityDirection * relativeVelocity.magnitude;
+
+            subject.SetPosition(destinationGateLocation + destinationOffsetLocation);
+            subject.SetWorldVelocity(destinationGateVelocity + destinationOffsetVelocity);
 
             // TODO: fix parts-jitter after teleport
             // TODO: fix destinationGate bumping up after teleport
             // TODO: fix aero effects 1 frame during teleportation
-            _subject.UpdatePosVel();
-            _subject.orbitDriver.UpdateOrbit();
+            subject.UpdatePosVel();
+            subject.orbitDriver.UpdateOrbit();
         }
 
-        private void SetNewOrbit(Orbit newOrbit)
+        private void SetNewOrbit(Orbit newOrbit, Vessel subject)
         {
-            _subject.Splashed = false;
-            _subject.Landed = false;
-            _subject.landedAt = null;
+            subject.Splashed = false;
+            subject.Landed = false;
+            subject.landedAt = null;
 
             try
             {
@@ -125,14 +148,14 @@ namespace Stargate.Utilities
             }
             catch (NullReferenceException)
             {
-                BlaarkiesLog.Debug("Could not hold vessel unpacked");
+                BlaarkiesLog.DebugThrottled("Could not hold vessel unpacked");
                 BlaarkiesLog.OnScreen("Wormhole malfunctioned");
                 return;
             }
 
             FlightGlobals.Vessels.ForEach(v => v.GoOnRails());
 
-            _subject.orbitDriver.orbit.UpdateFromOrbitAtUT(
+            subject.orbitDriver.orbit.UpdateFromOrbitAtUT(
                 newOrbit,
                 Planetarium.GetUniversalTime(),
                 newOrbit.referenceBody);
@@ -145,19 +168,36 @@ namespace Stargate.Utilities
                 return;
             }
 
-            var gateLocation = _originGatePart.CoMOffset + _originGate.CoM;
-            var gateActiveSize = _originGatePart.prefabSize.magnitude * .7f;
+            TryToTeleport();
+        }
 
-            _subject = FlightGlobals.FindNearestVesselWhere(gateLocation,
-                    v => v != _originGate && Vector3.Distance(v.CoM, gateLocation) < gateActiveSize)
-                .FirstOrDefault();
-
-            if (_subject != null)
+        public void TryToTeleport()
+        {
+            var subject = GetSubjectToBeTeleported();
+            if (subject != null)
             {
-                TeleportSubject();
+                TeleportSubject(subject);
                 Close();
                 BlaarkiesLog.OnScreen($"Teleported subject");
             }
+        }
+
+        private Vessel GetSubjectToBeTeleported()
+        {
+            var gateQuaternion = _originGatePart.orgRot * _originGate.srfRelRotation;
+            var gateVector = gateQuaternion.eulerAngles.normalized;
+
+            var gateLocation = _originGatePart.CoMOffset + _originGate.CoM;
+            var plane = new Plane(gateVector, gateLocation);
+
+            // prefabSize is diameter, *.5 to radius, *.75 to event horizon size
+            var eventHorizonRadius = _originGatePart.prefabSize.magnitude * .5f * .75f;
+
+            return FlightGlobals.FindNearestVesselWhere(gateLocation,
+                    v => v != _originGate
+                         && plane.GetDistanceToPoint(v.CoM).Absolute() < .1f
+                         && Vector3.Distance(gateLocation, v.CoM) < eventHorizonRadius)
+                .FirstOrDefault();
         }
 
         public void Open(Action onCloseCallback,

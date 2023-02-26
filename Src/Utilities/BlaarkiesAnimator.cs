@@ -7,7 +7,7 @@ namespace Stargate.Utilities
 {
     public class BlaarkiesAnimator
     {
-        public static int lastLayer = 1;
+        private static int lastLayer = 1;
 
         private readonly GameObject _gameObject;
         private readonly string _name;

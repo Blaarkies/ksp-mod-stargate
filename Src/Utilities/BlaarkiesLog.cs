@@ -15,7 +15,12 @@ namespace Stargate.Utilities
             ScreenMessages.PostScreenMessage($"{MOD_NAME} {message}", 60);
         }
 
-        public static void Debug(
+        public static void Debug(string message)
+        {
+            UnityEngine.Debug.Log($"{MOD_NAME}[Debug] {message}");
+        }
+
+        public static void DebugThrottled(
             string message,
             string category = "default",
             float waitSeconds = 1f)

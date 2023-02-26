@@ -42,6 +42,11 @@ namespace Stargate.Utilities
                 : value;
         }
 
+        public static float Absolute(this float value)
+        {
+            return Math.Abs(value);
+        }
+
         public static List<T> Shuffle<T>(this IList<T> list)
         {
             var rng = new Random();
