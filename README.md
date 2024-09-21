@@ -2,6 +2,8 @@
 
 #### A Kerbal Space Program mod that adds portals to the game
 
+(in progress demo)[https://youtu.be/unWgcGZV8Hk]
+
 ### What is it about?
 In [Stargate](https://en.wikipedia.org/wiki/Stargate), kerbals uncovered
 an ancient ring structure near the Desert Pyramids. The origins of this device 
